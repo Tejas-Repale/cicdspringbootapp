@@ -1,0 +1,29 @@
+name: CI/CD Spring Boot Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 17 for build
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Build Spring Boot JAR
+        run: mvn clean package
+
+      - name: Deploy to EC2
+        uses: ./.github/actions/springboot-deploy
+        with:
+          ec2_key: ${{ secrets.EC2_KEY }}
+          ec2_user: ${{ secrets.EC2_USER }}
+          ec2_host: ${{ secrets.EC2_HOST }}
