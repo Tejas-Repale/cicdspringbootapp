@@ -1,30 +1,30 @@
-name: CI/CD Spring Boot Deploy
+name: CI/CD Spring Boot App
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
 
 jobs:
-  build-deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Set up JDK 17 for build
+      - name: Set up JDK
         uses: actions/setup-java@v3
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Build Maven project
-        working-directory: ./myapp   # <--- folder where pom.xml exists
-        run: mvn clean package -DskipTests
+      - name: Build with Maven
+        run: mvn -B clean package -DskipTests
+        working-directory: ./myapp   # update if your pom.xml is elsewhere
 
-      - name: Deploy to EC2
+      - name: Run Spring Boot Deploy Action
         uses: ./.github/actions/springboot-deploy
         with:
-          ec2_key: ${{ secrets.EC2_KEY }}
-          ec2_user: ${{ secrets.EC2_USER }}
           ec2_host: ${{ secrets.EC2_HOST }}
+          ec2_user: ${{ secrets.EC2_USER }}
+          ec2_key: ${{ secrets.EC2_KEY }}
