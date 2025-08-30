@@ -1,15 +1,12 @@
 name: "Spring Boot Deploy"
-description: "Deploy Spring Boot JAR to AWS EC2"
+description: "Deploy Spring Boot app to EC2"
 
 inputs:
   ec2_host:
-    description: "EC2 public DNS or IP"
     required: true
   ec2_user:
-    description: "EC2 username (ec2-user for Amazon Linux, ubuntu for Ubuntu)"
     required: true
   ec2_key:
-    description: "EC2 private key (PEM)"
     required: true
 
 runs:
@@ -18,7 +15,9 @@ runs:
     - name: Run deploy script
       shell: bash
       run: |
+        echo "${{ inputs.ec2_key }}" | base64 -d > ec2-key.pem
+        chmod 600 ec2-key.pem
         bash $GITHUB_ACTION_PATH/deploy.sh \
-        "${{ inputs.ec2_host }}" \
-        "${{ inputs.ec2_user }}" \
-        "${{ inputs.ec2_key }}"
+          "${{ inputs.ec2_host }}" \
+          "${{ inputs.ec2_user }}" \
+          "ec2-key.pem"
