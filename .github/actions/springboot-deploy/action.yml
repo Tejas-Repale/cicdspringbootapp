@@ -1,0 +1,19 @@
+name: 'Spring Boot Deploy Automated'
+description: 'Deploy Spring Boot JAR to EC2 with automatic Java installation and auto-start'
+runs:
+  using: 'composite'
+  steps:
+    - name: Run Deployment Script
+      shell: bash
+      run: |
+        bash ${{ github.action_path }}/deploy.sh "${{ inputs.ec2_key }}" "${{ inputs.ec2_user }}" "${{ inputs.ec2_host }}"
+inputs:
+  ec2_key:
+    description: 'EC2 Private Key (base64 encoded)'
+    required: true
+  ec2_user:
+    description: 'EC2 Username (usually ubuntu)'
+    required: true
+  ec2_host:
+    description: 'EC2 Host or IP'
+    required: true

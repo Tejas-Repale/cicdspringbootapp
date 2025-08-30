@@ -27,3 +27,4 @@ jobs:
           ec2_key: ${{ secrets.EC2_KEY }}
           ec2_user: ${{ secrets.EC2_USER }}
           ec2_host: ${{ secrets.EC2_HOST }}
+  
