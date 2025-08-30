@@ -21,6 +21,10 @@ jobs:
       - name: Build Spring Boot JAR
         run: mvn clean package
 
+      - name: Build Maven project
+        working-directory: ./myapp   # <--- here, where pom.xml exists
+        run: mvn clean package -DskipTests
+
       - name: Deploy to EC2
         uses: ./.github/actions/springboot-deploy
         with:
