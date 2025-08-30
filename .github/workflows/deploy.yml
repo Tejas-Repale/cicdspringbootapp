@@ -18,11 +18,8 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Build Spring Boot JAR
-        run: mvn clean package
-
       - name: Build Maven project
-        working-directory: ./myapp   # <--- here, where pom.xml exists
+        working-directory: ./myapp   # <--- folder where pom.xml exists
         run: mvn clean package -DskipTests
 
       - name: Deploy to EC2
@@ -31,4 +28,3 @@ jobs:
           ec2_key: ${{ secrets.EC2_KEY }}
           ec2_user: ${{ secrets.EC2_USER }}
           ec2_host: ${{ secrets.EC2_HOST }}
-  
