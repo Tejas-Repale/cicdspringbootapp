@@ -3,12 +3,12 @@ set -e
 
 echo "Starting automated deployment..."
 
-# Save key
-echo "$1" | base64 --decode > ec2-key.pem
+# Decode base64 EC2 key
+echo "$EC2_KEY" | base64 --decode > ec2-key.pem
 chmod 600 ec2-key.pem
 
-# SSH and install Java if missing, create systemd service for auto-start
-ssh -o StrictHostKeyChecking=no -i ec2-key.pem $2@$3 << 'EOF'
+# SSH: install Java if missing, stop old app
+ssh -o StrictHostKeyChecking=no -i ec2-key.pem $EC2_USER@$EC2_HOST << 'EOF'
   echo "Installing Java if missing..."
   if ! java -version &>/dev/null; then
     sudo apt update
@@ -19,11 +19,18 @@ ssh -o StrictHostKeyChecking=no -i ec2-key.pem $2@$3 << 'EOF'
   pkill -f 'java -jar' || true
 EOF
 
-# Copy JAR
-scp -o StrictHostKeyChecking=no -i ec2-key.pem target/*.jar $2@$3:~/app.jar
+# Copy JAR from the correct folder (myapp/target)
+JAR_FILE=$(ls myapp/target/*.jar | grep -v 'sources\|javadoc')
+if [ -z "$JAR_FILE" ]; then
+  echo "Error: JAR file not found in myapp/target/"
+  exit 1
+fi
 
-# SSH and create systemd service for auto-start
-ssh -o StrictHostKeyChecking=no -i ec2-key.pem $2@$3 << EOF
+echo "Copying $JAR_FILE to $EC2_USER@$EC2_HOST..."
+scp -o StrictHostKeyChecking=no -i ec2-key.pem "$JAR_FILE" $EC2_USER@$EC2_HOST:/home/$EC2_USER/app.jar
+
+# SSH: create systemd service for auto-start
+ssh -o StrictHostKeyChecking=no -i ec2-key.pem $EC2_USER@$EC2_HOST << EOF
   echo "Creating systemd service..."
   cat << EOT | sudo tee /etc/systemd/system/myapp.service
 [Unit]
@@ -31,8 +38,8 @@ Description=Spring Boot MyApp
 After=network.target
 
 [Service]
-User=$2
-ExecStart=/usr/bin/java -jar /home/$2/app.jar
+User=$EC2_USER
+ExecStart=/usr/bin/java -jar /home/$EC2_USER/app.jar
 SuccessExitStatus=143
 Restart=always
 RestartSec=5
