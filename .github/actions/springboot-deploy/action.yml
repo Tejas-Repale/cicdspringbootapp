@@ -1,35 +1,28 @@
-name: "Spring Boot Deploy"
-description: "Build and deploy Spring Boot app to EC2"
+name: "Spring Boot Deploy to EC2"
+description: "Deploy Spring Boot application to EC2 using SSH and SCP"
+author: "Your Name"
+runs:
+  using: "composite"
+  steps:
+    - name: Make deploy.sh executable
+      run: chmod +x $GITHUB_ACTION_PATH/deploy.sh
+      shell: bash
+
+    - name: Run deploy script
+      run: $GITHUB_ACTION_PATH/deploy.sh
+      shell: bash
+      env:
+        EC2_SSH_KEY: ${{ inputs.EC2_SSH_KEY }}
+        EC2_USER: ${{ inputs.EC2_USER }}
+        EC2_HOST: ${{ inputs.EC2_HOST }}
+
 inputs:
   EC2_SSH_KEY:
     description: "Base64 encoded EC2 private key"
     required: true
   EC2_USER:
-    description: "EC2 username (e.g., ubuntu)"
+    description: "EC2 username (e.g., ubuntu or ec2-user)"
     required: true
   EC2_HOST:
     description: "EC2 public IP or DNS"
     required: true
-runs:
-  using: "composite"
-  steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-
-    - name: Set up JDK 17
-      uses: actions/setup-java@v3
-      with:
-        distribution: temurin
-        java-version: 17
-
-    - name: Make deploy.sh executable
-      shell: bash
-      run: chmod +x .github/actions/springboot-deploy/deploy.sh
-
-    - name: Run deploy.sh
-      shell: bash
-      run: .github/actions/springboot-deploy/deploy.sh
-      env:
-        EC2_SSH_KEY: ${{ inputs.EC2_SSH_KEY }}
-        EC2_USER: ${{ inputs.EC2_USER }}
-        EC2_HOST: ${{ inputs.EC2_HOST }}
