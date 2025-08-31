@@ -10,7 +10,7 @@ if [ -z "$EC2_SSH_KEY" ] || [ -z "$EC2_USER" ] || [ -z "$EC2_HOST" ]; then
   echo "EC2_USER=$EC2_USER"
   echo "EC2_HOST=$EC2_HOST"
   exit 1
-fi
+
 
 # Save private key
 echo "$EC2_SSH_KEY" > ec2_key.pem
