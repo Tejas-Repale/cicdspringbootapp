@@ -1,23 +1,44 @@
-name: Deploy Spring Boot App
+name: Build and Deploy Spring Boot to EC2
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ] 
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      # 1. Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Build with Maven
-        run: mvn -f myapp/pom.xml clean package -DskipTests
-
-      - name: Deploy to EC2
-        uses: ./.github/actions/springboot-deploy
+      # 2. Set up JDK 17 (or your version)
+      - name: Set up JDK
+        uses: actions/setup-java@v3
         with:
-          ec2_host: ${{ secrets.EC2_HOST }}
-          ec2_user: ${{ secrets.EC2_USER }}
-          ec2_key: ${{ secrets.EC2_SSH_KEY }}
+          java-version: '17'
+          distribution: 'temurin'
+
+      # 3. Build Spring Boot JAR with Maven
+      - name: Build with Maven
+        run: mvn clean package -DskipTests
+
+      # 4. Save EC2 Key
+      - name: Save SSH Key
+        run: |
+          echo "${{ secrets.EC2_KEY }}" > ec2-key.pem
+          chmod 400 laptop-key.pem
+
+      # 5. Upload JAR to EC2
+      - name: Copy JAR to EC2
+        run: |
+          scp -i laptop-key.pem \
+            target/myapp-0.0.1-SNAPSHOT.jar \
+            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}/
+
+      # 6. Run app on EC2 (optional)
+      - name: Run Spring Boot App on EC2
+        run: |
+          ssh -i ec2-key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
+          "nohup java -jar /home/${{ secrets.EC2_USER }}/myapp-0.0.1-SNAPSHOT.jar > app.log 2>&1 &"
