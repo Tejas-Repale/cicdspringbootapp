@@ -3,7 +3,7 @@ name: CI/CD Spring Boot to EC2
 on:
   push:
     branches:
-      - main   # Trigger only when pushing to main branch
+      - main
 
 jobs:
   build-and-deploy:
@@ -21,18 +21,24 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      # Build with Maven (point to myapp directory)
+      # Build with Maven
       - name: Build with Maven
         run: |
-              cd myapp
-              mvn clean package -DskipTests
+          cd myapp
+          mvn clean package -DskipTests
+
+      # Move jar to root/target for deploy.sh
+      - name: Move JAR to root target
+        run: |
+          mkdir -p target
+          cp myapp/target/*.jar target/
 
       # Deploy to EC2
       - name: Deploy to EC2
         env:
-          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}   # private key
-          EC2_USER: ${{ secrets.EC2_USER }}         # usually ec2-user or ubuntu
-          EC2_HOST: ${{ secrets.EC2_HOST }}         # public IP or DNS
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_HOST: ${{ secrets.EC2_HOST }}
         run: |
-           chmod +x .github/actions/springboot-deploy/deploy.sh
-           .github/actions/springboot-deploy/deploy.sh
+          chmod +x .github/actions/springboot-deploy/deploy.sh
+          .github/actions/springboot-deploy/deploy.sh
