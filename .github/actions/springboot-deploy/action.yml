@@ -1,13 +1,21 @@
-name: "Spring Boot Deploy"
-description: "Builds and deploys Spring Boot app to EC2"
-
+name: Spring Boot Deploy
+description: "Deploy Spring Boot app to EC2"
+inputs:
+  EC2_SSH_KEY:
+    description: "Base64-encoded EC2 private key"
+    required: true
+  EC2_USER:
+    description: "EC2 username (ubuntu/ec2-user)"
+    required: true
+  EC2_HOST:
+    description: "EC2 public IP or DNS"
+    required: true
 runs:
-  using: "composite"
+  using: "bash"
   steps:
-    - name: Run deploy script
-      shell: bash
-      run: bash $GITHUB_ACTION_PATH/deploy.sh
+    - name: Run deploy.sh
+      run: .github/actions/springboot-deploy/deploy.sh
       env:
-        EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
-        EC2_USER: ${{ secrets.EC2_USER }}
-        EC2_HOST: ${{ secrets.EC2_HOST }}
+        EC2_SSH_KEY: ${{ inputs.EC2_SSH_KEY }}
+        EC2_USER: ${{ inputs.EC2_USER }}
+        EC2_HOST: ${{ inputs.EC2_HOST }}
