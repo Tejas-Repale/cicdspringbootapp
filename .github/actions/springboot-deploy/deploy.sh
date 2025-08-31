@@ -1,26 +1,19 @@
 #!/bin/bash
 set -e
 
-EC2_HOST=$1
-EC2_USER=$2
-EC2_KEY=$3
+echo "Starting automated deployment..."
 
-echo "Starting automated deployment"
+# Write SSH key from secret into a file
+echo "$EC2_SSH_KEY" > private_key.pem
+chmod 600 private_key.pem
 
-JAR_FILE="myapp/target/myapp-0.0.1-SNAPSHOT.jar"
+JAR_FILE="target/myapp-0.0.1-SNAPSHOT.jar"
 
-if [[ ! -f "$JAR_FILE" ]]; then
-  echo "Error: JAR file not found at $JAR_FILE"
-  exit 1
-fi
+echo "Uploading $JAR_FILE to EC2..."
+scp -o StrictHostKeyChecking=no -i private_key.pem $JAR_FILE $EC2_USER@$EC2_HOST:/home/$EC2_USER/app.jar
 
-echo "Uploading $JAR_FILE to EC2"
-scp -i "$EC2_KEY" -o StrictHostKeyChecking=no "$JAR_FILE" "$EC2_USER@$EC2_HOST:/home/$EC2_USER/app.jar"
-
-echo "Restarting app on EC2"
-ssh -i "$EC2_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" << 'EOF'
+echo "Restarting app on EC2..."
+ssh -o StrictHostKeyChecking=no -i private_key.pem $EC2_USER@$EC2_HOST << 'EOF'
   pkill -f 'java -jar' || true
-  nohup java -jar /home/$USER/app.jar > app.log 2>&1 &
+  nohup java -jar /home/$EC2_USER/app.jar > app.log 2>&1 &
 EOF
-
-echo "Deployment completed successfully"

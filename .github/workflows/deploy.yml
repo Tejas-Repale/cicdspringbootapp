@@ -1,45 +1,27 @@
-name: Build and Deploy Spring Boot to EC2
+name: Deploy Spring Boot to EC2
 
 on:
   push:
-    branches: [ "main" ] 
+    branches: [ "main" ]
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
-
     steps:
-      # 1. Checkout code
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      # 2. Set up JDK 17
       - name: Set up JDK
         uses: actions/setup-java@v3
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      # 3. Build Spring Boot JAR with Maven (inside myapp/)
       - name: Build with Maven
         run: mvn clean package -DskipTests
-        working-directory: myapp
 
-      # 4. Save EC2 Key
-      - name: Save SSH Key
-        run: |
-          echo "${{ secrets.EC2_KEY }}" > ec2-key.pem
-          chmod 400 ec2-key.pem
-
-      # 5. Upload JAR to EC2
-      - name: Copy JAR to EC2
-        run: |
-          scp -o StrictHostKeyChecking=no -i ec2-key.pem \
-            myapp/target/myapp-0.0.1-SNAPSHOT.jar \
-            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}/
-
-      # 6. Run app on EC2
-      - name: Run Spring Boot App on EC2
-        run: |
-          ssh -o StrictHostKeyChecking=no -i ec2-key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
-          "nohup java -jar /home/${{ secrets.EC2_USER }}/myapp-0.0.1-SNAPSHOT.jar > app.log 2>&1 &"
+      - name: Deploy to EC2
+        env:
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+        run: bash .github/actions/springboot-deploy/deploy.sh
