@@ -1,23 +1,13 @@
 name: "Spring Boot Deploy"
-description: "Deploy Spring Boot app to EC2"
-
-inputs:
-  ec2_host:
-    required: true
-  ec2_user:
-    required: true
-  ec2_key:
-    required: true
+description: "Builds and deploys Spring Boot app to EC2"
 
 runs:
   using: "composite"
   steps:
     - name: Run deploy script
       shell: bash
-      run: |
-        echo "${{ inputs.ec2_key }}" | base64 -d > ec2-key.pem
-        chmod 600 ec2-key.pem
-        bash $GITHUB_ACTION_PATH/deploy.sh \
-          "${{ inputs.ec2_host }}" \
-          "${{ inputs.ec2_user }}" \
-          "ec2-key.pem"
+      run: bash $GITHUB_ACTION_PATH/deploy.sh
+      env:
+        EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        EC2_USER: ${{ secrets.EC2_USER }}
+        EC2_HOST: ${{ secrets.EC2_HOST }}
