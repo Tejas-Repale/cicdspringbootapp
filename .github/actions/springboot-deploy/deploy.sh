@@ -3,42 +3,26 @@ set -e
 
 echo "Starting Deployment..."
 
-# Ensure .ssh directory exists
-mkdir -p ~/.ssh
-chmod 700 ~/.ssh
-
-# Write private key from secret
-echo "$EC2_SSH_KEY" > ~/.ssh/ec2-key.pem
-
-# Fix possible Windows/formatting issues automatically
-# 1. Remove CRLF if present
-sed -i 's/\r$//' ~/.ssh/ec2-key.pem
-# 2. Ensure correct permissions
-chmod 600 ~/.ssh/ec2-key.pem
-
-# Verify key validity before continuing
-if ! ssh-keygen -l -f ~/.ssh/ec2-key.pem >/dev/null 2>&1; then
-  echo "Invalid SSH key format. Please check EC2_SSH_KEY secret."
+# Check variables
+if [ -z "$EC2_SSH_KEY" ] || [ -z "$EC2_USER" ] || [ -z "$EC2_HOST" ]; then
+  echo " ERROR: One or more required environment variables are missing!"
+  echo "EC2_SSH_KEY=$EC2_SSH_KEY"
+  echo "EC2_USER=$EC2_USER"
+  echo "EC2_HOST=$EC2_HOST"
   exit 1
 fi
 
-# Test SSH connection before deploying
+# Save private key
+echo "$EC2_SSH_KEY" > ec2_key.pem
+chmod 600 ec2_key.pem
+
 echo "Testing SSH connection..."
-if ! ssh -o StrictHostKeyChecking=no -i ~/.ssh/ec2-key.pem $EC2_USER@$EC2_HOST "echo 'SSH connection successful'"; then
-  echo "SSH connection failed. Check EC2_USER, EC2_HOST, or key."
-  exit 1
-fi
+ssh -o StrictHostKeyChecking=no -i ec2_key.pem $EC2_USER@$EC2_HOST "echo SSH connection successful"
 
-# Copy JAR file to EC2
 echo "Uploading JAR file..."
-scp -o StrictHostKeyChecking=no -i ~/.ssh/ec2-key.pem target/*.jar $EC2_USER@$EC2_HOST:/home/$EC2_USER/app.jar
+scp -i ec2_key.pem target/*.jar $EC2_USER@$EC2_HOST:/home/$EC2_USER/app.jar
 
-# Run the app on EC2
 echo "Starting Spring Boot app on EC2..."
-ssh -o StrictHostKeyChecking=no -i ~/.ssh/ec2-key.pem $EC2_USER@$EC2_HOST << 'EOF'
-  pkill -f "java -jar" || true
-  nohup java -jar /home/$EC2_USER/app.jar > app.log 2>&1 &
-  echo "Spring Boot app started"
-EOF
-# Upload JAR file
-scp -o StrictHostKeyChecking=no -i "$KEY_FILE" myapp/target/*.jar $USER@$HOST:/home/$USER/app.jar
+ssh -i ec2_key.pem $EC2_USER@$EC2_HOST "nohup java -jar /home/$EC2_USER/app.jar > app.log 2>&1 &"
+
+echo " Deployment Completed Successfully!"
