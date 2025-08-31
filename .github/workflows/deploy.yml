@@ -1,11 +1,13 @@
-name: Build and Deploy Spring Boot App to EC2
+name: Spring Boot CI/CD
 
 on:
   push:
-    branches: ["main"]   # Deploy only when pushing to main branch
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
-  deploy:
+  build-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -19,7 +21,14 @@ jobs:
         distribution: 'temurin'
 
     - name: Build with Maven
+      working-directory: ./myapp
       run: mvn clean package -DskipTests
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: springboot-jar
+        path: myapp/target/*.jar
 
     - name: Setup SSH key
       run: |
@@ -28,11 +37,13 @@ jobs:
 
     - name: Copy JAR to EC2
       run: |
-        scp -i ec2-key.pem -o StrictHostKeyChecking=no target/*.jar ec2-user@${{ secrets.EC2_HOST }}:/home/ec2-user/app.jar
+        scp -i ec2-key.pem -o StrictHostKeyChecking=no myapp/target/*.jar ec2-user@${{ secrets.EC2_PUBLIC_IP }}:/home/ec2-user/app.jar
 
-    - name: Run Spring Boot App on EC2
+    - name: Deploy on EC2
       run: |
-        ssh -i ec2-key.pem -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_HOST }} "
-          pkill -f 'java -jar' || true
+        ssh -i ec2-key.pem -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+          # Kill old process if running
+          pgrep -f "java -jar app.jar" && kill -9 $(pgrep -f "java -jar app.jar") || true
+          # Run new jar in background
           nohup java -jar /home/ec2-user/app.jar > app.log 2>&1 &
-        "
+        EOF
