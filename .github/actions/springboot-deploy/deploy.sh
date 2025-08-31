@@ -40,3 +40,5 @@ ssh -o StrictHostKeyChecking=no -i ~/.ssh/ec2-key.pem $EC2_USER@$EC2_HOST << 'EO
   nohup java -jar /home/$EC2_USER/app.jar > app.log 2>&1 &
   echo "Spring Boot app started"
 EOF
+# Upload JAR file
+scp -o StrictHostKeyChecking=no -i "$KEY_FILE" myapp/target/*.jar $USER@$HOST:/home/$USER/app.jar

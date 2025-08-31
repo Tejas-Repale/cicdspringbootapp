@@ -23,8 +23,9 @@ jobs:
 
       # Build with Maven (point to myapp directory)
       - name: Build with Maven
-        run: mvn clean package -DskipTests
-        working-directory: ./myapp
+        run: |
+              cd myapp
+              mvn clean package -DskipTests
 
       # Deploy to EC2
       - name: Deploy to EC2
