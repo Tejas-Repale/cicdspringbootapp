@@ -3,25 +3,21 @@ set -e
 
 echo "Starting Deployment..."
 
+# Create private key file from GitHub secret
+echo "$EC2_KEY" > ec2-key.pem
+chmod 600 ec2-key.pem
+
 # Variables
-APP_NAME="myapp"
-JAR_NAME="myapp-0.0.1-SNAPSHOT.jar"
-REMOTE_DIR="/home/$EC2_USER/$APP_NAME"
-LOCAL_JAR="myapp/target/$JAR_NAME"
+JAR_FILE="target/myapp.jar"
+REMOTE_PATH="/home/$EC2_USER/app"
 
 # Copy JAR to EC2
-scp -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$LOCAL_JAR" "$EC2_USER@$EC2_HOST:$REMOTE_DIR/"
+scp -i ec2-key.pem $JAR_FILE $EC2_USER@$EC2_HOST:$REMOTE_PATH/
 
-# Restart Spring Boot app on EC2
-ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" << EOF
-  pkill -f $JAR_NAME || true
-  nohup java -jar $REMOTE_DIR/$JAR_NAME > $REMOTE_DIR/app.log 2>&1 &
+# Restart application
+ssh -i ec2-key.pem $EC2_USER@$EC2_HOST << EOF
+  pkill -f "java -jar" || true
+  nohup java -jar $REMOTE_PATH/myapp.jar > app.log 2>&1 &
 EOF
 
-# Deployment status
-if [ $? -eq 0 ]; then
-   echo "Deployment successful"
-else
-   echo "Deployment failed"
-   exit 1
-fi
+echo "Deployment Finished!"

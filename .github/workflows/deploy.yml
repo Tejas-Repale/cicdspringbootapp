@@ -1,44 +1,28 @@
-name: CI/CD Spring Boot to EC2
+name: Spring Boot Deploy
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
-
     steps:
-      # Checkout repo
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Set up JDK
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v3
         with:
-          distribution: temurin
-          java-version: 17
+          java-version: '17'
+          distribution: 'temurin'
 
-      # Build with Maven
-      - name: Build with Maven
-        run: |
-          cd myapp
-          mvn clean package -DskipTests
+      - name: Build JAR
+        run: mvn clean package -DskipTests
 
-      # Move jar to root/target for deploy.sh
-      - name: Move JAR to root target
-        run: |
-          mkdir -p target
-          cp myapp/target/*.jar target/
-
-      # Deploy to EC2
       - name: Deploy to EC2
+        run: .github/actions/springboot-deploy/deploy.sh
         env:
-          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          EC2_KEY: ${{ secrets.EC2_KEY }}
           EC2_USER: ${{ secrets.EC2_USER }}
           EC2_HOST: ${{ secrets.EC2_HOST }}
-        run: |
-          chmod +x .github/actions/springboot-deploy/deploy.sh
-          .github/actions/springboot-deploy/deploy.sh
