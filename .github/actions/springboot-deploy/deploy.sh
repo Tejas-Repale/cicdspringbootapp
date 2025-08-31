@@ -3,26 +3,25 @@ set -e
 
 echo "Starting Deployment..."
 
-# Check variables
-if [ -z "$EC2_SSH_KEY" ] || [ -z "$EC2_USER" ] || [ -z "$EC2_HOST" ]; then
-  echo " ERROR: One or more required environment variables are missing!"
-  echo "EC2_SSH_KEY=$EC2_SSH_KEY"
-  echo "EC2_USER=$EC2_USER"
-  echo "EC2_HOST=$EC2_HOST"
-  exit 1
+# Variables
+APP_NAME="myapp"
+JAR_NAME="myapp-0.0.1-SNAPSHOT.jar"
+REMOTE_DIR="/home/$EC2_USER/$APP_NAME"
+LOCAL_JAR="myapp/target/$JAR_NAME"
 
+# Copy JAR to EC2
+scp -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$LOCAL_JAR" "$EC2_USER@$EC2_HOST:$REMOTE_DIR/"
 
-# Save private key
-echo "$EC2_SSH_KEY" > ec2_key.pem
-chmod 600 ec2_key.pem
+# Restart Spring Boot app on EC2
+ssh -i "$EC2_SSH_KEY" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" << EOF
+  pkill -f $JAR_NAME || true
+  nohup java -jar $REMOTE_DIR/$JAR_NAME > $REMOTE_DIR/app.log 2>&1 &
+EOF
 
-echo "Testing SSH connection..."
-ssh -o StrictHostKeyChecking=no -i ec2_key.pem $EC2_USER@$EC2_HOST "echo SSH connection successful"
-
-echo "Uploading JAR file..."
-scp -i ec2_key.pem target/*.jar $EC2_USER@$EC2_HOST:/home/$EC2_USER/app.jar
-
-echo "Starting Spring Boot app on EC2..."
-ssh -i ec2_key.pem $EC2_USER@$EC2_HOST "nohup java -jar /home/$EC2_USER/app.jar > app.log 2>&1 &"
-
-echo " Deployment Completed Successfully!"
+# Deployment status
+if [ $? -eq 0 ]; then
+   echo "Deployment successful"
+else
+   echo "Deployment failed"
+   exit 1
+fi
