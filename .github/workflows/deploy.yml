@@ -10,21 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
-        with:
-          distribution: temurin
-          java-version: 17
-
-      - name: Build Maven project
-        run: |
-          cd myapp
-          mvn clean package -DskipTests
-
-      - name: Deploy to EC2
+      - name: Deploy Spring Boot app
         uses: ./.github/actions/springboot-deploy
         with:
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}

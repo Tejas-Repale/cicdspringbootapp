@@ -1,11 +1,11 @@
-name: Spring Boot Deploy
-description: "Deploy Spring Boot app to EC2"
+name: "Spring Boot Deploy"
+description: "Build and deploy Spring Boot app to EC2"
 inputs:
   EC2_SSH_KEY:
-    description: "Base64-encoded EC2 private key"
+    description: "Base64 encoded EC2 private key"
     required: true
   EC2_USER:
-    description: "EC2 username (ubuntu/ec2-user)"
+    description: "EC2 username (e.g., ubuntu)"
     required: true
   EC2_HOST:
     description: "EC2 public IP or DNS"
@@ -13,8 +13,21 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        distribution: temurin
+        java-version: 17
+
+    - name: Make deploy.sh executable
+      shell: bash
+      run: chmod +x .github/actions/springboot-deploy/deploy.sh
+
     - name: Run deploy.sh
-      shell: bash   # <--- THIS IS REQUIRED
+      shell: bash
       run: .github/actions/springboot-deploy/deploy.sh
       env:
         EC2_SSH_KEY: ${{ inputs.EC2_SSH_KEY }}
