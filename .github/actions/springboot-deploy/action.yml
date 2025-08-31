@@ -11,9 +11,10 @@ inputs:
     description: "EC2 public IP or DNS"
     required: true
 runs:
-  using: "bash"
+  using: "composite"
   steps:
     - name: Run deploy.sh
+      shell: bash   # <--- THIS IS REQUIRED
       run: .github/actions/springboot-deploy/deploy.sh
       env:
         EC2_SSH_KEY: ${{ inputs.EC2_SSH_KEY }}
